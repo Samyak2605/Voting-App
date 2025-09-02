@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: votes
+    ports:
+      - "5432:5432"
+
+  vote:
+    build: ./vote
+    image: local/vote:dev
+    environment:
+      - OPTION_A=Rain
+      - OPTION_B=Snow
+      - REDIS_HOST=redis
+    ports:
+      - "5050:80"
+    depends_on:
+      - redis
+
+  worker:
+    build: ./worker
+    image: local/worker:dev
+    environment:
+      - REDIS_HOST=redis
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=votes
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      - redis
+      - db
+
+  result:
+    build: ./result
+    image: local/result:dev
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=votes
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5051:80"
+    depends_on:
+      - db

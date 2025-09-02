@@ -1,0 +1,66 @@
+trigger:
+  paths:
+    include:
+      - result/*
+
+resources:
+- repo: self
+
+variables:
+  dockerRegistryServiceConnection: 'REPLACE_WITH_SERVICE_CONNECTION_ID'
+  imageRepository: 'votingapp'
+  containerRegistry: 'gabvotingappacr.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/result/Dockerfile'
+  tag: '$(Build.BuildId)'
+
+pool:
+  name: 'REPLACE_WITH_SELF_HOSTED_POOL'
+
+stages:
+- stage: Build
+  displayName: Build the voting App
+  jobs:
+  - job: Build
+    displayName: Build
+    steps:
+    - task: Docker@2
+      inputs:
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        repository: '$(imageRepository)/result'
+        command: 'build'
+        Dockerfile: 'result/Dockerfile'
+        tags: '$(tag)'
+
+- stage: Push
+  displayName: Push the voting App
+  dependsOn: Build
+  jobs:
+  - job: Push
+    displayName: Push
+    steps:
+    - task: Docker@2
+      inputs:
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        repository: '$(imageRepository)/result'
+        command: 'push'
+        tags: '$(tag)'
+
+- stage: Update_bash_script
+  displayName: Update Bash Script
+  dependsOn: Push
+  jobs:
+  - job: Updating_repo_with_bash
+    displayName: Update manifests in Azure Repos
+    steps:
+    - bash: sudo apt-get update && sudo apt-get install -y dos2unix
+      displayName: Install dos2unix
+    - bash: |
+        dos2unix scripts/updateK8sManifests.sh
+        chmod +x scripts/updateK8sManifests.sh
+        export AZURE_REPO_HTTPS="$(AZURE_REPO_HTTPS)"
+        export AZURE_PAT="$(AZURE_PAT)"
+        scripts/updateK8sManifests.sh "result" "$(containerRegistry)/$(imageRepository)" "$(tag)"
+      displayName: Run update script
+      env:
+        AZURE_PAT: $(AZURE_PAT)
+        AZURE_REPO_HTTPS: $(AZURE_REPO_HTTPS)

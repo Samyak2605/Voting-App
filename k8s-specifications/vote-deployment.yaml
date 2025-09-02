@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vote
+  labels:
+    app: vote
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vote
+  template:
+    metadata:
+      labels:
+        app: vote
+    spec:
+      containers:
+      - name: vote
+        image: gabvotingappacr.azurecr.io/votingapp/vote:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: OPTION_A
+          value: "Rain"
+        - name: OPTION_B
+          value: "Snow"
+        - name: REDIS_HOST
+          value: "redis"
+      imagePullSecrets:
+      - name: acr-pull-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vote
+spec:
+  type: NodePort
+  selector:
+    app: vote
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 31000
