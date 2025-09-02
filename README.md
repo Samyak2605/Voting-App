@@ -22,7 +22,6 @@ make down      # stop & clean
 - Pipelines: `azure-pipelines/`
 - Manifests: `k8s-specifications/`
 - Update script: `scripts/updateK8sManifests.sh`
-- Evidence (screenshots/logs): `evidence/` (add your screenshots)
 
 ## Configure (Azure DevOps)
 - Create a Docker Registry service connection for ACR
@@ -40,5 +39,5 @@ make down      # stop & clean
 - ArgoCD Application → repo path `k8s-specifications`, auto-sync
 
 ## Notes
-- Secrets are never committed; use `.env.example` as a guide
-- Demo-friendly defaults; add persistence/security hardening for production
+- Do not commit secrets. Use environment variables, Key Vault/Secret Manager, and pipeline secret variables.
+- Demo-friendly defaults; add persistence/security hardening for production.
